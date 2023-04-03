@@ -1,8 +1,18 @@
-ThisBuild / version := "0.1.0-SNAPSHOT"
+name := "ScalaMongoDiff"
+version := "1.0.0"
+organization := "bireme"
+scalaVersion := "2.13.10"
 
-ThisBuild / scalaVersion := "2.13.10"
+publishMavenStyle := true
 
-lazy val root = (project in file("."))
-  .settings(
-    name := "ScalaMongoDiff"
-  )
+val mongoScalaDriver = "4.9.0"
+val commonsCsv = "1.10.0"
+val json4sNative = "4.1.0-M1"
+
+libraryDependencies ++= Seq(
+  "org.mongodb.scala" %% "mongo-scala-driver" % mongoScalaDriver,
+  "org.apache.commons" % "commons-csv" % commonsCsv,
+  "org.json4s" %% "json4s-native" % json4sNative,
+)
+
+publishTo := Some("GitHub Package Registry" at "https://maven.pkg.github.com/bireme/ScalaMongoDiff")
