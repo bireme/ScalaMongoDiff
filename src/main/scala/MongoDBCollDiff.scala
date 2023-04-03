@@ -9,7 +9,7 @@ import scala.util.Try
 
 class MongoDBCollDiff {
 
-  private def mongoDBCollDiff(database_from1: String,
+  def mongoDBCollDiff(database_from1: String,
                            collection_from1: String,
                            collection_from2: String,
                            collection_out: String,
