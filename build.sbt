@@ -1,5 +1,5 @@
 name := "ScalaMongoDiff"
-version := "1.0.0"
+version := "1.0.1"
 organization := "bireme"
 scalaVersion := "2.13.10"
 
