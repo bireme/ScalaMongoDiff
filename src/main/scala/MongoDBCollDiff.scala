@@ -9,31 +9,6 @@ import scala.util.Try
 
 class MongoDBCollDiff {
 
-  case class ParamsMongoDBCollDiff(database_from1: String,
-                                   collection_from1: String,
-                                   collection_from2: String,
-                                   collection_out: String,
-                                   idField: String,
-                                   database_from2: Option[String],
-                                   database_out: Option[String],
-                                   host_from1: Option[String],
-                                   port_from1: Option[Int],
-                                   host_from2: Option[String],
-                                   port_from2: Option[Int],
-                                   host_out: Option[String],
-                                   port_out: Option[Int],
-                                   user_from1: Option[String],
-                                   password_from1: Option[String],
-                                   user_from2: Option[String],
-                                   password_from2: Option[String],
-                                   user_out: Option[String],
-                                   password_out: Option[String],
-                                   total: Option[Int],
-                                   noCompFields: Option[String],
-                                   takeFields: Option[String],
-                                   noUpDate: Boolean,
-                                   append: Boolean)
-
   def mongoDBCollDiff(params: ParamsMongoDBCollDiff): Try[Unit] = {
     Try {
       val mongo_instance1: MongoDB = new MongoDB(params.database_from1, params.collection_from1, params.host_from1, params.port_from1, params.user_from1, params.password_from1, params.total, true)
