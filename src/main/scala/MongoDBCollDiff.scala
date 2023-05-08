@@ -9,45 +9,46 @@ import scala.util.Try
 
 class MongoDBCollDiff {
 
-  def mongoDBCollDiff(database_from1: String,
-                           collection_from1: String,
-                           collection_from2: String,
-                           collection_out: String,
-                           idField: String,
-                           database_from2: Option[String],
-                           database_out: Option[String],
-                           host_from1: Option[String],
-                           port_from1: Option[Int],
-                           host_from2: Option[String],
-                           port_from2: Option[Int],
-                           host_out: Option[String],
-                           port_out: Option[Int],
-                           user_from1: Option[String],
-                           password_from1: Option[String],
-                           user_from2: Option[String],
-                           password_from2: Option[String],
-                           user_out: Option[String],
-                           password_out: Option[String],
-                           total: Option[Int],
-                           noCompFields: Option[String],
-                           takeFields: Option[String],
-                           noUpDate: Boolean,
-                           append: Boolean): Try[Unit] = {
+  case class ParamsMongoDBCollDiff(database_from1: String,
+                                   collection_from1: String,
+                                   collection_from2: String,
+                                   collection_out: String,
+                                   idField: String,
+                                   database_from2: Option[String],
+                                   database_out: Option[String],
+                                   host_from1: Option[String],
+                                   port_from1: Option[Int],
+                                   host_from2: Option[String],
+                                   port_from2: Option[Int],
+                                   host_out: Option[String],
+                                   port_out: Option[Int],
+                                   user_from1: Option[String],
+                                   password_from1: Option[String],
+                                   user_from2: Option[String],
+                                   password_from2: Option[String],
+                                   user_out: Option[String],
+                                   password_out: Option[String],
+                                   total: Option[Int],
+                                   noCompFields: Option[String],
+                                   takeFields: Option[String],
+                                   noUpDate: Boolean,
+                                   append: Boolean)
+
+  def mongoDBCollDiff(params: ParamsMongoDBCollDiff): Try[Unit] = {
     Try {
-      val mongo_instance1: MongoDB = new MongoDB(database_from1, collection_from1, host_from1, port_from1, user_from1, password_from1, total, true)
-      val mongo_instance2: MongoDB = new MongoDB(database_from2.getOrElse(""), collection_from2, host_from2, port_from2, user_from2, password_from2, total, true)
-      val mongo_instanceOut: MongoDB = new MongoDB(database_out.getOrElse(""), collection_out, host_out, port_out, user_out, password_out, total, append)
+      val mongo_instance1: MongoDB = new MongoDB(params.database_from1, params.collection_from1, params.host_from1, params.port_from1, params.user_from1, params.password_from1, params.total, true)
+      val mongo_instance2: MongoDB = new MongoDB(params.database_from2.getOrElse(""), params.collection_from2, params.host_from2, params.port_from2, params.user_from2, params.password_from2, params.total, true)
+      val mongo_instanceOut: MongoDB = new MongoDB(params.database_out.getOrElse(""), params.collection_out, params.host_out, params.port_out, params.user_out, params.password_out, params.total, params.append)
 
       val docs_instance1: Seq[Document] = mongo_instance1.findAll
       val docs_instance2: Seq[Document] = mongo_instance2.findAll
 
-      val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, idField, noCompFields, takeFields)
-      val documentsFinal = updateField_updd(documentsCompared, noUpDate)
+      val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
+      val documentsFinal = updateField_updd(documentsCompared, params.noUpDate)
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
       listJson.sorted.foreach(mongo_instanceOut.insertDocument)
     }
   }
-
 
   private def compareDocuments(docs_list1: Seq[Document], docs_list2: Seq[Document], identifierField: String, noCompFields: Option[String], takeFields: Option[String]): Seq[Array[(String, AnyRef)]] = {
 
