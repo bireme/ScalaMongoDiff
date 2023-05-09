@@ -17,10 +17,17 @@ class MongoDBCollDiff {
 
       val docs_instance1: Seq[Document] = mongo_instance1.findAll
       val docs_instance2: Seq[Document] = mongo_instance2.findAll
+      print(s"${docs_instance1.length} - docs_instance1")
+      print(s"${docs_instance2.length} - docs_instance2")
 
       val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
+      print(s"${documentsCompared.length} - documentsCompared")
+
       val documentsFinal = updateField_updd(documentsCompared, params.noUpDate)
+      print(s"${documentsFinal.length} - documentsFinal")
+
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
+      print(s"${listJson.length} - listJson")
       listJson.sorted.foreach(mongo_instanceOut.insertDocument)
     }
   }
