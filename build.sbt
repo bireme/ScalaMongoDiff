@@ -14,5 +14,3 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-csv" % commonsCsv,
   "org.json4s" %% "json4s-native" % json4sNative,
 )
-
-publishTo := Some("GitHub Package Registry" at "https://maven.pkg.github.com/bireme/ScalaMongoDiff")
