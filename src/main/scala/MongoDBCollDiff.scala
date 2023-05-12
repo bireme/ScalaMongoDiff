@@ -1,7 +1,8 @@
 import org.json4s.DefaultFormats
 import org.json4s.native.Json
 import org.mongodb.scala.Document
-import org.mongodb.scala.bson.BsonArray
+import org.mongodb.scala.bson.collection.immutable.Document.fromSpecific
+import org.mongodb.scala.bson.{BsonArray, BsonValue}
 
 import java.util.Date
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -17,20 +18,14 @@ class MongoDBCollDiff {
 
       val docs_instance1: Seq[Document] = mongo_instance1.findAll
       val docs_instance2: Seq[Document] = mongo_instance2.findAll
-      println(s"${docs_instance1.length} - docs_instance1")
-      println(s"${docs_instance2.length} - docs_instance2")
+      println(s" - Collection ${params.collection_from1} Total: ${docs_instance1.length}")
+      println(s" - Collection ${params.collection_from2} Total: ${docs_instance2.length}")
 
       val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
-      println(s"${documentsCompared.length} - documentsCompared")
-      println(s"${params.idField} - idField")
-      println(s"${params.noCompFields} - noCompFields")
-      println(s"${params.takeFields} - takeFields")
-
       val documentsFinal = updateField_updd(documentsCompared, params.noUpDate)
-      println(s"${documentsFinal.length} - documentsFinal")
 
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
-      println(s"${listJson.length} - listJson")
+      println(s"${listJson.length} - Writings")
       listJson.sorted.foreach(mongo_instanceOut.insertDocument)
     }
   }
@@ -40,8 +35,8 @@ class MongoDBCollDiff {
     val noCompFieldsParam: Array[String] = noCompFields.getOrElse("_id").split(",") :+ "_id"
     val takeFieldsParam: Array[String] = takeFields.getOrElse(identifierField).split(",") :+ identifierField
 
-    val docsListOneDiffDocsListTwo: Seq[Document] = compareDocumentsBetweenLists(docs_list1, docs_list2, takeFieldsParam)
-    val docsListTwoDiffDocsListOne: Seq[Document] = compareDocumentsBetweenLists(docs_list2, docs_list1, takeFieldsParam)
+    val docsListOneDiffDocsListTwo: Seq[Document] = compareDocumentsBetweenLists(docs_list1, docs_list2, identifierField, takeFieldsParam)
+    val docsListTwoDiffDocsListOne: Seq[Document] = compareDocumentsBetweenLists(docs_list2, docs_list1, identifierField, takeFieldsParam)
 
     val docsListOneValid: Seq[Document] = deleteDocumentsWithUnnecessaryFields(docsListOneDiffDocsListTwo, identifierField)
     val listDocsOneWithoutMongoId: Seq[Document] = docsListOneValid.map(doc => doc.filterNot(field => noCompFieldsParam.contains(field._1)))
@@ -58,7 +53,10 @@ class MongoDBCollDiff {
 
     val resultSeq = for {
       doc1 <- seq1
-      doc2 <- seq2
+
+      valueIdDoc1 = doc1.filterKeys(_.equals(identifierField)).values.head.asString().getValue
+      doc2: Document = seq2.find(doc => doc.contains(identifierField) && doc.containsValue(valueIdDoc1)).getOrElse(Document())
+
       if doc1.get(identifierField) == doc2.get(identifierField)
       keys = doc1.keySet.intersect(doc2.keySet) ++ doc1.keySet.diff(doc2.keySet) ++ doc2.keySet.diff(doc1.keySet)
       result = keys.flatMap(key => {
@@ -73,6 +71,35 @@ class MongoDBCollDiff {
 
     resultSeq.filter(_.nonEmpty).map(f => f.map(h => (h._1, h._2)))
   }
+
+  //  private def compareDocuments(seq1: Seq[Document], seq2: Seq[Document], takeFieldsParam: Array[String], identifierField: String): Seq[Array[(String, AnyRef)]] = {
+  //
+  //    val resultSeq = for {
+  //      doc1 <- seq1
+  //      valueIdDoc1 = doc1.filterKeys(_.equals(identifierField)).values.head.asString().getValue
+  //      doc2: Seq[Document] = seq2.filter(doc => doc.contains(identifierField) && doc.containsValue(valueIdDoc1))
+  //
+  //      result = if (doc2.nonEmpty) compareDocumentsHelper(doc1, identifierField, doc2.head, takeFieldsParam)
+  //      else compareDocumentsHelper(doc1, identifierField, doc1.map(f => f), takeFieldsParam)
+  //
+  //    } yield (identifierField, doc1.get(identifierField).get.asString().getValue) +: result.toArray
+  //    resultSeq.filter(f => f.nonEmpty).map(f => f.map(h => (h._1, h._2)))
+  //  }
+  //
+  //  def compareDocumentsHelper(doc1: Document, identifierField: String, doc2: Document, takeFieldsParam: Array[String]): Seq[(String, Array[AnyRef])] = {
+  //
+  //    val keyUpdd: String = "_updd"
+  //    val keys: Set[String] = doc1.keySet.intersect(doc2.keySet) ++ doc1.keySet.diff(doc2.keySet) ++ doc2.keySet.diff(doc1.keySet)
+  //    val result: Seq[(String, Array[AnyRef])] = keys.toList.flatMap(key => {
+  //      if (key != identifierField && key != keyUpdd) {
+  //        val value1 = checkIsArrayOrString(doc1, doc2, key)
+  //        val value2 = checkIsArrayOrString(doc2, doc1, key)
+  //        if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1)) Some((key, Array(value1._2, value2._2))) else None
+  //      } else None
+  //    })
+  //    result
+  //  }
+
 
   private def checkIsArrayOrString(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
 
@@ -89,8 +116,29 @@ class MongoDBCollDiff {
         val listFieldsFull = listFields.diff(listFieldsArray)
         (key, listFieldsFull)
       } else (key, docAllFields.get(key).get.asString().getValue)
-    }else (key, docAllFields.get(key).get.asString().getValue)
+    } else (key, docAllFields.get(key).get.asString().getValue)
   }
+
+  //  private def checkIsArrayOrString(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
+  //
+  //    val docAllFields: Document = if (doc.contains(key)) doc else doc.updated(key, "")
+  //    val docIsArray: Boolean = isValueArray(key, docAllFields)
+  //
+  //    if (docIsArray) {
+  //      val listFields: Array[String] = docAllFields.get(key).get.asArray().getValues.asScala.map(_.asString().getValue).toArray
+  //      val docAllFieldsArray: Document = if (docCompare.contains(key)) docCompare else docCompare.updated(key, BsonArray(""))
+  //      val isDocValueArray: Boolean = isValueArray(key, docAllFieldsArray)
+  //
+  //      if (isDocValueArray) {
+  //        val listFieldsArray: Array[String] = docAllFieldsArray.get(key).get.asArray().getValues.asScala.map(_.asString().getValue).toArray
+  //        val listFieldsFull = listFields.diff(listFieldsArray)
+  //        (key, listFieldsFull)
+  //      } else if (docAllFields.get(key).get.isArray)
+  //        (key, docAllFields.get(key).get.asArray().getValues.asScala.toArray.map(_.asString().getValue))
+  //      else
+  //        (key, docAllFields.get(key).get.asString().getValue)
+  //    } else (key, docAllFields.get(key).get.asString().getValue)
+  //  }
 
   private def isValueArray(key: String, docAllFields: Document): Boolean = {
     docAllFields.get(key).get.getBsonType.name() == "ARRAY"
@@ -100,14 +148,28 @@ class MongoDBCollDiff {
     docsListOneDiffDocsListTwo.filterNot(f => f.isEmpty || f.contains("_id") && f.size == 1 || f.contains("_id") && f.contains(identifierField) && f.size <= 2)
   }
 
-  private def compareDocumentsBetweenLists(list1: Seq[Document], list2: Seq[Document], takeFieldsParam: Array[String]): Seq[Document] = {
-    val listDocumentsCompared: Seq[Document] = list1.map(doc1 => doc1.filter {
-      field1 =>
-        if (!takeFieldsParam.contains(field1._1))
-          !list2.exists(doc2 => doc2.exists(field2 => field1.equals(field2)))
-        else true
-    })
-    listDocumentsCompared
+  private def compareDocumentsBetweenLists(list1: Seq[Document], list2: Seq[Document], identifierField: String, takeFieldsParam: Array[String]): Seq[Document] = {
+
+    val docsCompared: Seq[Document] = list1.map { doc1 =>
+      val valueIDdoc1: BsonValue = fromSpecific(doc1).get(identifierField).get
+      val doc2: Option[Document] = list2.find(_.getString(identifierField).equals(valueIDdoc1.asString().getValue))
+      val hg = doc2 match {
+        case Some(doc2) =>
+          doc1.filter { h =>
+            !doc2.exists(g =>
+              if (takeFieldsParam.contains(h._1)) {
+                false
+              } else {
+                if (h._1.equals(g._1))
+                  h._2.equals(g._2)
+                else false
+              })
+          }
+        case None => None
+      }
+      doc1.filter(f => hg.exists(h => f.equals(h)))
+    }
+    docsCompared
   }
 
   private def updateField_updd(datalListFinal: Seq[Array[(String, AnyRef)]], noUpDate: Boolean): Array[Array[(String, AnyRef)]] = {
