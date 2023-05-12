@@ -72,35 +72,6 @@ class MongoDBCollDiff {
     resultSeq.filter(_.nonEmpty).map(f => f.map(h => (h._1, h._2)))
   }
 
-  //  private def compareDocuments(seq1: Seq[Document], seq2: Seq[Document], takeFieldsParam: Array[String], identifierField: String): Seq[Array[(String, AnyRef)]] = {
-  //
-  //    val resultSeq = for {
-  //      doc1 <- seq1
-  //      valueIdDoc1 = doc1.filterKeys(_.equals(identifierField)).values.head.asString().getValue
-  //      doc2: Seq[Document] = seq2.filter(doc => doc.contains(identifierField) && doc.containsValue(valueIdDoc1))
-  //
-  //      result = if (doc2.nonEmpty) compareDocumentsHelper(doc1, identifierField, doc2.head, takeFieldsParam)
-  //      else compareDocumentsHelper(doc1, identifierField, doc1.map(f => f), takeFieldsParam)
-  //
-  //    } yield (identifierField, doc1.get(identifierField).get.asString().getValue) +: result.toArray
-  //    resultSeq.filter(f => f.nonEmpty).map(f => f.map(h => (h._1, h._2)))
-  //  }
-  //
-  //  def compareDocumentsHelper(doc1: Document, identifierField: String, doc2: Document, takeFieldsParam: Array[String]): Seq[(String, Array[AnyRef])] = {
-  //
-  //    val keyUpdd: String = "_updd"
-  //    val keys: Set[String] = doc1.keySet.intersect(doc2.keySet) ++ doc1.keySet.diff(doc2.keySet) ++ doc2.keySet.diff(doc1.keySet)
-  //    val result: Seq[(String, Array[AnyRef])] = keys.toList.flatMap(key => {
-  //      if (key != identifierField && key != keyUpdd) {
-  //        val value1 = checkIsArrayOrString(doc1, doc2, key)
-  //        val value2 = checkIsArrayOrString(doc2, doc1, key)
-  //        if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1)) Some((key, Array(value1._2, value2._2))) else None
-  //      } else None
-  //    })
-  //    result
-  //  }
-
-
   private def checkIsArrayOrString(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
 
     val docAllFields: Document = if (doc.contains(key)) doc else doc.updated(key, "")
@@ -118,27 +89,6 @@ class MongoDBCollDiff {
       } else (key, docAllFields.get(key).get.asString().getValue)
     } else (key, docAllFields.get(key).get.asString().getValue)
   }
-
-  //  private def checkIsArrayOrString(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
-  //
-  //    val docAllFields: Document = if (doc.contains(key)) doc else doc.updated(key, "")
-  //    val docIsArray: Boolean = isValueArray(key, docAllFields)
-  //
-  //    if (docIsArray) {
-  //      val listFields: Array[String] = docAllFields.get(key).get.asArray().getValues.asScala.map(_.asString().getValue).toArray
-  //      val docAllFieldsArray: Document = if (docCompare.contains(key)) docCompare else docCompare.updated(key, BsonArray(""))
-  //      val isDocValueArray: Boolean = isValueArray(key, docAllFieldsArray)
-  //
-  //      if (isDocValueArray) {
-  //        val listFieldsArray: Array[String] = docAllFieldsArray.get(key).get.asArray().getValues.asScala.map(_.asString().getValue).toArray
-  //        val listFieldsFull = listFields.diff(listFieldsArray)
-  //        (key, listFieldsFull)
-  //      } else if (docAllFields.get(key).get.isArray)
-  //        (key, docAllFields.get(key).get.asArray().getValues.asScala.toArray.map(_.asString().getValue))
-  //      else
-  //        (key, docAllFields.get(key).get.asString().getValue)
-  //    } else (key, docAllFields.get(key).get.asString().getValue)
-  //  }
 
   private def isValueArray(key: String, docAllFields: Document): Boolean = {
     docAllFields.get(key).get.getBsonType.name() == "ARRAY"
