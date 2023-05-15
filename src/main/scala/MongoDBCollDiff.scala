@@ -2,9 +2,10 @@ import org.json4s.DefaultFormats
 import org.json4s.native.Json
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.collection.immutable.Document.fromSpecific
-import org.mongodb.scala.bson.{BsonArray, BsonValue}
+import org.mongodb.scala.bson.{BsonArray, BsonDocument, BsonValue}
 
 import java.util.Date
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -99,28 +100,62 @@ class MongoDBCollDiff {
   }
 
   private def compareDocumentsBetweenLists(list1: Seq[Document], list2: Seq[Document], identifierField: String, takeFieldsParam: Array[String]): Seq[Document] = {
+    val batchSize: Int = 25000
+    val docsCompared = new mutable.ArrayBuffer[Document]
 
-    val docsCompared: Seq[Document] = list1.map { doc1 =>
-      val valueIDdoc1: BsonValue = fromSpecific(doc1).get(identifierField).get
-      val doc2: Option[Document] = list2.find(_.getString(identifierField).equals(valueIDdoc1.asString().getValue))
-      val hg = doc2 match {
-        case Some(doc2) =>
-          doc1.filter { h =>
-            !doc2.exists(g =>
-              if (takeFieldsParam.contains(h._1)) {
-                false
-              } else {
-                if (h._1.equals(g._1))
-                  h._2.equals(g._2)
-                else false
-              })
-          }
-        case None => None
+    val list1Grouped: Iterator[Seq[Document]] = list1.grouped(batchSize)
+    val list2Grouped: Iterator[Seq[Document]] = list2.grouped(batchSize)
+
+    val listPairs: Iterator[(Seq[Document], Seq[Document])] = list1Grouped.zipAll(list2Grouped, Seq.empty, Seq.empty)
+
+    for ((batchList1, batchList2) <- listPairs) {
+      val docsInBatch = batchList1.map { doc1 =>
+        val valueIDdoc1: BsonValue = fromSpecific(doc1).get(identifierField).get
+        val doc2: Option[Document] = batchList2.find(_.getString(identifierField).equals(valueIDdoc1.asString().getValue))
+        val docResult: IterableOnce[(String, BsonValue)] = doc2 match {
+          case Some(doc2) =>
+            doc1.filter { h =>
+              !doc2.exists(g =>
+                if (takeFieldsParam.contains(h._1)) {
+                  false
+                } else {
+                  if (h._1.equals(g._1))
+                    h._2.equals(g._2)
+                  else false
+                })
+            }
+          case None => None
+        }
+        doc1.filter(f => docResult.exists(h => f.equals(h)))
       }
-      doc1.filter(f => hg.exists(h => f.equals(h)))
+      docsCompared ++= docsInBatch
     }
-    docsCompared
+    docsCompared.toSeq
   }
+
+//  private def compareDocumentsBetweenLists(list1: Seq[Document], list2: Seq[Document], identifierField: String, takeFieldsParam: Array[String]): Seq[Document] = {
+//
+//    val docsCompared: Seq[Document] = list1.map { doc1 =>
+//      val valueIDdoc1: BsonValue = fromSpecific(doc1).get(identifierField).get
+//      val doc2: Option[Document] = list2.find(_.getString(identifierField).equals(valueIDdoc1.asString().getValue))
+//      val hg = doc2 match {
+//        case Some(doc2) =>
+//          doc1.filter { h =>
+//            !doc2.exists(g =>
+//              if (takeFieldsParam.contains(h._1)) {
+//                false
+//              } else {
+//                if (h._1.equals(g._1))
+//                  h._2.equals(g._2)
+//                else false
+//              })
+//          }
+//        case None => None
+//      }
+//      doc1.filter(f => hg.exists(h => f.equals(h)))
+//    }
+//    docsCompared
+//  }
 
   private def updateField_updd(datalListFinal: Seq[Array[(String, AnyRef)]], noUpDate: Boolean): Array[Array[(String, AnyRef)]] = {
 
