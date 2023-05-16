@@ -13,20 +13,23 @@ class MongoDBCollDiff {
 
   def mongoDBCollDiff(params: ParamsMongoDBCollDiff): Try[Unit] = {
     Try {
+      System.out.println("\n")
+      println(s"Collection comparison started - ScalaMongoDiff ${new Date()}")
+
       val mongo_instance1: MongoDB = new MongoDB(params.database_from1, params.collection_from1, params.host_from1, params.port_from1, params.user_from1, params.password_from1, params.total, true)
       val mongo_instance2: MongoDB = new MongoDB(params.database_from2.getOrElse(params.database_from1), params.collection_from2, params.host_from2, params.port_from2, params.user_from2, params.password_from2, params.total, true)
       val mongo_instanceOut: MongoDB = new MongoDB(params.database_out.getOrElse(params.database_from1), params.collection_out, params.host_out, params.port_out, params.user_out, params.password_out, params.total, params.append)
 
       val docs_instance1: Seq[Document] = mongo_instance1.findAll
       val docs_instance2: Seq[Document] = mongo_instance2.findAll
-      println(s" - Collection ${params.collection_from1} Total: ${docs_instance1.length}")
-      println(s" - Collection ${params.collection_from2} Total: ${docs_instance2.length}")
+      println(s" * Collection ${params.collection_from1} Total: ${docs_instance1.length}")
+      println(s" * Collection ${params.collection_from2} Total: ${docs_instance2.length}")
 
       val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
       val documentsFinal = updateField_updd(documentsCompared, params.noUpDate)
 
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
-      println(s"${listJson.length} - Writings")
+      println(s" * ${listJson.length} Writings")
       listJson.sorted.foreach(mongo_instanceOut.insertDocument)
     }
   }
@@ -63,8 +66,8 @@ class MongoDBCollDiff {
       keys = doc1.keySet.intersect(doc2.keySet) ++ doc1.keySet.diff(doc2.keySet) ++ doc2.keySet.diff(doc1.keySet)
       result = keys.flatMap(key => {
         if (key != identifierField && key != keyUpdd && key != keyUpddSrc) {
-          val value1: (String, AnyRef) = checkIsArrayOrString(doc1, doc2, key)
-          val value2: (String, AnyRef) = checkIsArrayOrString(doc2, doc1, key)
+          val value1: (String, AnyRef) = checkIsArrayOrStringOrDate(doc1, doc2, key)
+          val value2: (String, AnyRef) = checkIsArrayOrStringOrDate(doc2, doc1, key)
           if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1)) Some((key, Array(value1._2, value2._2))) else None
         } else None
       })
@@ -216,15 +219,26 @@ object MongoDBCollDiff {
     val noUpDate: Boolean = parameters.contains("noUpDate")
     val append: Boolean = parameters.contains("append")
 
+    val startDate: Date = new Date()
     val params: ParamsMongoDBCollDiff = ParamsMongoDBCollDiff(database_from1, collection_from1, collection_from2, collection_out,
       idField, database_from2, database_out, host_from1, port_from1, host_from2, port_from2, host_out, port_out, user_from1,
       password_from1, user_from2, password_from2, user_out, password_out, total, noCompFields, takeFields, noUpDate, append)
 
     (new MongoDBCollDiff).mongoDBCollDiff(params) match {
-      case Success(_) => System.exit(0)
+      case Success(_) =>
+        println(timeAtProcessing(startDate))
+        System.exit(0)
       case Failure(exception) =>
         println(exception.getMessage)
         System.exit(1)
     }
+  }
+
+  def timeAtProcessing(startDate: Date): String = {
+    val endDate: Date = new Date()
+    val elapsedTime: Long = (endDate.getTime - startDate.getTime) / 1000
+    val minutes: Long = elapsedTime / 60
+    val seconds: Long = elapsedTime % 60
+    s"Processing time: ${minutes}min e ${seconds}s\n"
   }
 }
