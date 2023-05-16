@@ -51,6 +51,7 @@ class MongoDBCollDiff {
   private def compareDocuments(seq1: Seq[Document], seq2: Seq[Document], takeFieldsParam: Array[String], identifierField: String): Seq[Array[(String, AnyRef)]] = {
 
     val keyUpdd: String = "_updd"
+    val keyUpddSrc: String = "_upddSrc"
 
     val resultSeq = for {
       doc1 <- seq1
@@ -61,9 +62,9 @@ class MongoDBCollDiff {
       if doc1.get(identifierField) == doc2.get(identifierField)
       keys = doc1.keySet.intersect(doc2.keySet) ++ doc1.keySet.diff(doc2.keySet) ++ doc2.keySet.diff(doc1.keySet)
       result = keys.flatMap(key => {
-        if (key != identifierField && key != keyUpdd) {
-          val value1 = checkIsArrayOrString(doc1, doc2, key)
-          val value2 = checkIsArrayOrString(doc2, doc1, key)
+        if (key != identifierField && key != keyUpdd && key != keyUpddSrc) {
+          val value1: (String, AnyRef) = checkIsArrayOrString(doc1, doc2, key)
+          val value2: (String, AnyRef) = checkIsArrayOrString(doc2, doc1, key)
           if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1)) Some((key, Array(value1._2, value2._2))) else None
         } else None
       })
@@ -73,7 +74,7 @@ class MongoDBCollDiff {
     resultSeq.filter(_.nonEmpty).map(f => f.map(h => (h._1, h._2)))
   }
 
-  private def checkIsArrayOrString(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
+  private def checkIsArrayOrStringOrDate(doc: Document, docCompare: Document, key: String): (String, AnyRef) = {
 
     val docAllFields: Document = if (doc.contains(key)) doc else doc.updated(key, "")
     val docIsArray: Boolean = isValueArray(key, docAllFields)
@@ -88,7 +89,8 @@ class MongoDBCollDiff {
         val listFieldsFull = listFields.diff(listFieldsArray)
         (key, listFieldsFull)
       } else (key, docAllFields.get(key).get.asString().getValue)
-    } else (key, docAllFields.get(key).get.asString().getValue)
+    } else if (docAllFields.get(key).get.isDateTime) (key, docAllFields.get(key).get.asDateTime().getValue.toString)
+    else (key, docAllFields.get(key).get.asString().getValue)
   }
 
   private def isValueArray(key: String, docAllFields: Document): Boolean = {
