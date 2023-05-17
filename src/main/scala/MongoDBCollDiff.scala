@@ -1,8 +1,9 @@
+import org.apache.commons.lang3.StringUtils
 import org.json4s.DefaultFormats
 import org.json4s.native.Json
 import org.mongodb.scala.Document
 import org.mongodb.scala.bson.collection.immutable.Document.fromSpecific
-import org.mongodb.scala.bson.{BsonArray, BsonDocument, BsonValue}
+import org.mongodb.scala.bson.{BsonArray, BsonValue}
 
 import java.util.Date
 import scala.collection.mutable
@@ -68,7 +69,8 @@ class MongoDBCollDiff {
         if (key != identifierField && key != keyUpdd && key != keyUpddSrc) {
           val value1: (String, AnyRef) = checkIsArrayOrStringOrDate(doc1, doc2, key)
           val value2: (String, AnyRef) = checkIsArrayOrStringOrDate(doc2, doc1, key)
-          if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1)) Some((key, Array(value1._2, value2._2))) else None
+          if (value1._2 != value2._2 || takeFieldsParam.contains(value1._1))
+            Some((key, Array(value1._2, value2._2, "Diff: ".concat(StringUtils.difference(value1._2.toString, value2._2.toString))))) else None
         } else None
       })
       if result.nonEmpty
@@ -131,43 +133,19 @@ class MongoDBCollDiff {
             }
           case None => None
         }
-        doc1.filter(f => docResult.exists(h => f.equals(h)))
+        doc1.filter(f => docResult.iterator.exists(h => f.equals(h)))
       }
       docsCompared ++= docsInBatch
     }
     docsCompared.toSeq
   }
 
-//  private def compareDocumentsBetweenLists(list1: Seq[Document], list2: Seq[Document], identifierField: String, takeFieldsParam: Array[String]): Seq[Document] = {
-//
-//    val docsCompared: Seq[Document] = list1.map { doc1 =>
-//      val valueIDdoc1: BsonValue = fromSpecific(doc1).get(identifierField).get
-//      val doc2: Option[Document] = list2.find(_.getString(identifierField).equals(valueIDdoc1.asString().getValue))
-//      val hg = doc2 match {
-//        case Some(doc2) =>
-//          doc1.filter { h =>
-//            !doc2.exists(g =>
-//              if (takeFieldsParam.contains(h._1)) {
-//                false
-//              } else {
-//                if (h._1.equals(g._1))
-//                  h._2.equals(g._2)
-//                else false
-//              })
-//          }
-//        case None => None
-//      }
-//      doc1.filter(f => hg.exists(h => f.equals(h)))
-//    }
-//    docsCompared
-//  }
-
-  private def updateField_updd(datalListFinal: Seq[Array[(String, AnyRef)]], noUpDate: Boolean): Array[Array[(String, AnyRef)]] = {
+  private def updateField_updd(dataListFinal: Seq[Array[(String, AnyRef)]], noUpDate: Boolean): Array[Array[(String, AnyRef)]] = {
 
     val dataListFinalRefactored = if (noUpDate) {
-      datalListFinal
+      dataListFinal
     } else {
-      val dataWithNewUpdd = datalListFinal.map(f => f.filterNot(h => h._1 == "_updd"))
+      val dataWithNewUpdd = dataListFinal.map(f => f.filterNot(h => h._1 == "_updd"))
       dataWithNewUpdd.map(f => f.appended("_updd", new Date().toString))
     }
     dataListFinalRefactored.toArray
@@ -234,7 +212,7 @@ object MongoDBCollDiff {
     }
   }
 
-  def timeAtProcessing(startDate: Date): String = {
+  private def timeAtProcessing(startDate: Date): String = {
     val endDate: Date = new Date()
     val elapsedTime: Long = (endDate.getTime - startDate.getTime) / 1000
     val minutes: Long = elapsedTime / 60
