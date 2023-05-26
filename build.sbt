@@ -1,9 +1,11 @@
-name := "ScalaMongoDiff"
-version := "1.0.1"
-organization := "bireme"
-scalaVersion := "2.13.10"
+ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / scalaVersion := "2.13.10"
 
-publishMavenStyle := true
+lazy val root = (project in file("."))
+  .settings(
+    name := "ScalaMongoDiff",
+    organization := "bireme"
+  )
 
 val mongoScalaDriver = "4.9.0"
 val commonsCsv = "1.10.0"
