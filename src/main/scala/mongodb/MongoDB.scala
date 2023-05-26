@@ -1,9 +1,10 @@
+package mongodb
+
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase, Observable}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-
 
 class MongoDB(database: String,
               collection: String,
@@ -36,13 +37,6 @@ class MongoDB(database: String,
   def findAll: Seq[Document] = new DocumentObservable(coll.find().limit(total.getOrElse(0))).observable.results()
 
   def insertDocument(doc: String): Unit = coll.insertOne(Document(doc)).results()
-
-
-  def insertDocuments(docs: Seq[String]): Unit = {
-    val documents = docs.map(Document(_))
-    coll.insertMany(documents).results()
-  }
-
 
   implicit class DocumentObservable(val observable: Observable[Document]) extends ImplicitObservable[Document] {
     override val converter: Document => String = doc => doc.toJson()
