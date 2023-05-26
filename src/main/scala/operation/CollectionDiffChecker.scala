@@ -1,7 +1,7 @@
-package coll_diff
+package operation
 
 import models.ParamsMongoDBCollDiff
-import mongodb.MongoDB
+import services.MongoDB
 import org.apache.commons.lang3.StringUtils
 import org.json4s.DefaultFormats
 import org.json4s.native.Json
@@ -14,9 +14,9 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
-class MongoDBCollDiff {
+class CollectionDiffChecker {
 
-  def mongoDBCollDiff(params: ParamsMongoDBCollDiff): Try[Unit] = {
+  def collectionDiffChecker(params: ParamsMongoDBCollDiff): Try[Unit] = {
     Try {
       System.out.println("\n")
       println(s"Collection comparison started - ScalaMongoDiff ${new Date()}")
@@ -30,7 +30,7 @@ class MongoDBCollDiff {
       println(s" * Collection ${params.collection_from1} Total: ${docs_instance1.length}")
       println(s" * Collection ${params.collection_from2} Total: ${docs_instance2.length}")
 
-      val documentsCompared: Seq[Array[(String, AnyRef)]] = compareDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
+      val documentsCompared: Seq[Array[(String, AnyRef)]] = getDiffDocuments(docs_instance1, docs_instance2, params.idField, params.noCompFields, params.takeFields)
       val documentsFinal = updateField_updd(documentsCompared, params.noUpDate)
 
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
@@ -39,7 +39,7 @@ class MongoDBCollDiff {
     }
   }
 
-  private def compareDocuments(docs_list1: Seq[Document], docs_list2: Seq[Document], identifierField: String, noCompFields: Option[String], takeFields: Option[String]): Seq[Array[(String, AnyRef)]] = {
+  private def getDiffDocuments(docs_list1: Seq[Document], docs_list2: Seq[Document], identifierField: String, noCompFields: Option[String], takeFields: Option[String]): Seq[Array[(String, AnyRef)]] = {
 
     val noCompFieldsParam: Array[String] = noCompFields.getOrElse("_id").split(",") :+ "_id"
     val takeFieldsParam: Array[String] = takeFields.getOrElse(identifierField).split(",") :+ identifierField
