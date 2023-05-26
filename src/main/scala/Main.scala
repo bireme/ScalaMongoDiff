@@ -1,4 +1,4 @@
-import coll_diff.MongoDBCollDiff
+import operation.CollectionDiffChecker
 import models.ParamsMongoDBCollDiff
 
 import scala.util.{Failure, Success}
@@ -7,7 +7,30 @@ import java.util.Date
 object Main {
 
   private def usage(): Unit = {
-    System.err.println("Error params!")
+    System.err.println("-database_from1=<name>    - MongoDB database name")
+    System.err.println("-collection_from1=<name>  - MongoDB database collection name")
+    System.err.println("-collection_from2=<name>  - MongoDB database collection name")
+    System.err.println("-collection_out=<name>    - MongoDB database collection name")
+    System.err.println("-idField=<name>           - Document identifier field")
+    System.err.println("[-database_from2=<name>]  - MongoDB database name")
+    System.err.println("[-database_out=<name>]    - MongoDB database name")
+    System.err.println("[-host_from1=<name>]      - MongoDB server name. Default value is 'localhost'")
+    System.err.println("[-port_from1=<number>]    - MongoDB server port number. Default value is 27017")
+    System.err.println("[-host_from2=<name>]      - MongoDB server name. Default value is 'localhost'")
+    System.err.println("[-port_from2=<number>]    - MongoDB server port number. Default value is 27017")
+    System.err.println("[-host_out=<name>]        - MongoDB server name. Default value is 'localhost'")
+    System.err.println("[-port_out=<number>]      - MongoDB server port number. Default value is 27017")
+    System.err.println("[-user_from1=<name>])     - MongoDB user name")
+    System.err.println("[-password_from1=<pwd>]   - MongoDB user password")
+    System.err.println("[-user_from2=<name>])     - MongoDB user name")
+    System.err.println("[-password_from2=<pwd>]   - MongoDB user password")
+    System.err.println("[-user_out=<name>])       - MongoDB user name")
+    System.err.println("[-password_out=<pwd>]     - MongoDB user password")
+    System.err.println("[-total=<number>]         - Total documents to be compared")
+    System.err.println("[-noCompFields=<name>]    - Fields that should not be compared")
+    System.err.println("[-takeFields=<name>]      - Fields that should be taken to the new collection even compared")
+    System.err.println("[--noUpDate]              - If present, it will not add the _updd field with the update date")
+    System.err.println("[--append]                - If present, will compose the collection without clearing it first")
     System.exit(1)
   }
 
@@ -54,7 +77,7 @@ object Main {
       idField, database_from2, database_out, host_from1, port_from1, host_from2, port_from2, host_out, port_out, user_from1,
       password_from1, user_from2, password_from2, user_out, password_out, total, noCompFields, takeFields, noUpDate, append)
 
-    (new MongoDBCollDiff).mongoDBCollDiff(params) match {
+    (new CollectionDiffChecker).collectionDiffChecker(params) match {
       case Success(_) =>
         println(timeAtProcessing(startDate))
         System.exit(0)
