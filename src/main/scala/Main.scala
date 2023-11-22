@@ -31,7 +31,7 @@ object Main {
     System.err.println("[-takeFields=<name>]      - Fields that should be taken to the new collection even compared")
     System.err.println("[--noUpDate]              - If present, it will not add the _updd field with the update date")
     System.err.println("[--append]                - If present, will compose the collection without clearing it first")
-    System.err.println("[-indexField=<string>]    - parameter to determine the name of the field that will take on the role of collection index")
+    System.err.println("[-indexField=<name>]    - parameter to determine the name of the field that will take on the role of collection index")
     System.exit(1)
   }
 
