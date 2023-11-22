@@ -23,4 +23,5 @@ case class ParamsMongoDBCollDiff(database_from1: String,
                                  noCompFields: Option[String],
                                  takeFields: Option[String],
                                  noUpDate: Boolean,
-                                 append: Boolean)
+                                 append: Boolean,
+                                 indexName: Option[String])

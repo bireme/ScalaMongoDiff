@@ -9,9 +9,9 @@ Compare two MongoDB collections, examining each document and field in detail, to
 
 ### Execution parameters
 
-1. Navigate to the 'bin' directory and run the 'mongocolldiff.sh' script, providing the required parameters and, if necessary, the optional ones, example:
+1. Navigate to the 'bin' directory and run the 'run_process.sh' script, providing the required parameters and, if necessary, the optional ones, example:
 
-        ...\bin>./mongocolldiff.sh -database_from1=dbname1 -collection_from1=colname1 -collection_from2=colname2 -collection_out=colnameout -idField=idname
+        ...\bin>./run_process.sh -database_from1=dbname1 -collection_from1=colname1 -collection_from2=colname2 -collection_out=colnameout -idField=idname
 
    Parameters:
 
@@ -39,3 +39,4 @@ Compare two MongoDB collections, examining each document and field in detail, to
          [-takeFields=<name>]             - Fields that should be included in the new collection, even if compared
          [--noUpDate]                     - If present, it will not add the _updd field with the update date
          [--append]                       - If present, it will compose the collection without clearing it first
+         [-indexField=<string>]           - parameter to determine the name of the field that will take on the role of collection index

@@ -31,6 +31,7 @@ object Main {
     System.err.println("[-takeFields=<name>]      - Fields that should be taken to the new collection even compared")
     System.err.println("[--noUpDate]              - If present, it will not add the _updd field with the update date")
     System.err.println("[--append]                - If present, will compose the collection without clearing it first")
+    System.err.println("[-indexField=<string>]    - parameter to determine the name of the field that will take on the role of collection index")
     System.exit(1)
   }
 
@@ -71,11 +72,12 @@ object Main {
     val takeFields: Option[String] = parameters.get("takeFields")
     val noUpDate: Boolean = parameters.contains("noUpDate")
     val append: Boolean = parameters.contains("append")
+    val indexField: Option[String] = parameters.get("indexField")
 
     val startDate: Date = new Date()
     val params: ParamsMongoDBCollDiff = ParamsMongoDBCollDiff(database_from1, collection_from1, collection_from2, collection_out,
       idField, database_from2, database_out, host_from1, port_from1, host_from2, port_from2, host_out, port_out, user_from1,
-      password_from1, user_from2, password_from2, user_out, password_out, total, noCompFields, takeFields, noUpDate, append)
+      password_from1, user_from2, password_from2, user_out, password_out, total, noCompFields, takeFields, noUpDate, append, indexField)
 
     (new CollectionDiffChecker).collectionDiffChecker(params) match {
       case Success(_) =>
