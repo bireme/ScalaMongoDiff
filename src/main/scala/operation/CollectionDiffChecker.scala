@@ -23,7 +23,7 @@ class CollectionDiffChecker {
 
       val mongo_instance1: MongoDB = new MongoDB(params.database_from1, params.collection_from1, params.host_from1, params.port_from1, params.user_from1, params.password_from1, params.total, true)
       val mongo_instance2: MongoDB = new MongoDB(params.database_from2.getOrElse(params.database_from1), params.collection_from2, params.host_from2, params.port_from2, params.user_from2, params.password_from2, params.total, true)
-      val mongo_instanceOut: MongoDB = new MongoDB(params.database_out.getOrElse(params.database_from1), params.collection_out, params.host_out, params.port_out, params.user_out, params.password_out, params.total, params.append, params.indexName)
+      val mongo_instanceOut: MongoDB = new MongoDB(params.database_out.getOrElse(params.database_from1), params.collection_out, params.host_out, params.port_out, params.user_out, params.password_out, params.total, params.append)
 
       val docs_instance1: Seq[Document] = mongo_instance1.findAll
       val docs_instance2: Seq[Document] = mongo_instance2.findAll
@@ -36,6 +36,8 @@ class CollectionDiffChecker {
       val listJson: Seq[String] = documentsFinal.map(f => Json(DefaultFormats).write(f.toMap.map(f => (f._1, f._2))))
       println(s" * ${listJson.length} Writings")
       listJson.sorted.foreach(mongo_instanceOut.insertDocument)
+
+      mongo_instanceOut.createIndex(params.indexName)
     }
   }
 

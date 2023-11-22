@@ -39,4 +39,4 @@ Compare two MongoDB collections, examining each document and field in detail, to
          [-takeFields=<name>]             - Fields that should be included in the new collection, even if compared
          [--noUpDate]                     - If present, it will not add the _updd field with the update date
          [--append]                       - If present, it will compose the collection without clearing it first
-         [-indexField=<string>]           - parameter to determine the name of the field that will take on the role of collection index
+         [-indexField=<name>]             - parameter to determine the name of the field that will take on the role of collection index

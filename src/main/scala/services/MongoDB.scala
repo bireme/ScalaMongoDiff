@@ -14,8 +14,7 @@ class MongoDB(database: String,
               user: Option[String] = None,
               password: Option[String] = None,
               total: Option[Int] = Option(0),
-              append: Boolean,
-              indexName: Option[String] = None) {
+              append: Boolean) {
   require((user.isEmpty && password.isEmpty) || (user.nonEmpty && password.nonEmpty))
 
   private val hostStr: String = host.getOrElse("localhost")
@@ -36,11 +35,15 @@ class MongoDB(database: String,
     dbase.getCollection(collection)
   }
 
-  indexName match {
-    case Some(index_name) =>
-      val listIndex: Set[String] = index_name.split(",").toSet
-      listIndex.foreach(index => coll.createIndex(Indexes.ascending(index)))
-    case None => None
+  def createIndex(indexName: Option[String]): Unit = {
+    indexName match {
+      case Some(value) =>
+        val listIndex: Set[String] = value.split(",").toSet
+        listIndex.foreach{index =>
+          coll.createIndex(Indexes.descending(index)).results()
+        }
+      case None => ()
+    }
   }
 
   def findAll: Seq[Document] = new DocumentObservable(coll.find().limit(total.getOrElse(0))).observable.results()
