@@ -1,5 +1,6 @@
 package services
 
+import com.mongodb.client.model.Indexes
 import org.mongodb.scala.{Document, MongoClient, MongoCollection, MongoDatabase, Observable}
 
 import java.util.concurrent.TimeUnit
@@ -13,7 +14,8 @@ class MongoDB(database: String,
               user: Option[String] = None,
               password: Option[String] = None,
               total: Option[Int] = Option(0),
-              append: Boolean) {
+              append: Boolean,
+              indexName: Option[String] = None) {
   require((user.isEmpty && password.isEmpty) || (user.nonEmpty && password.nonEmpty))
 
   private val hostStr: String = host.getOrElse("localhost")
@@ -32,6 +34,13 @@ class MongoDB(database: String,
       dbase.getCollection(collection)
     else dbase.getCollection(collection).drop().results()
     dbase.getCollection(collection)
+  }
+
+  indexName match {
+    case Some(index_name) =>
+      val listIndex: Set[String] = index_name.split(",").toSet
+      listIndex.foreach(index => coll.createIndex(Indexes.ascending(index)))
+    case None => None
   }
 
   def findAll: Seq[Document] = new DocumentObservable(coll.find().limit(total.getOrElse(0))).observable.results()
